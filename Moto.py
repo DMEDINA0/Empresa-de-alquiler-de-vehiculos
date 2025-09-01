@@ -5,4 +5,4 @@ class Moto(Vehiculo):
         super().__init__(nombre=nombre, tarifa_hora=10000)
 
     def calcular_costo(self, horas: int) -> int:
-        return int(self.tarifa_hora * horas * 1.1)  # recargo seguro
+        return int(self.tarifa_hora * horas)  

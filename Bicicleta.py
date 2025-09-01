@@ -5,4 +5,4 @@ class Bicicleta(Vehiculo):
         super().__init__(nombre=nombre, tarifa_hora=5000)
 
     def calcular_costo(self, horas: int) -> int:
-        return int(self.tarifa_hora * horas * 0.8)  # descuento eco
+        return int(self.tarifa_hora * horas) 

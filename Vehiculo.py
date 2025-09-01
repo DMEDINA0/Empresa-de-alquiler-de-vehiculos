@@ -35,3 +35,4 @@ class Vehiculo(BaseModel):
 
     def calcular_costo(self, horas: int) -> int:
         return self.tarifa_hora * horas
+# arreglado todo.

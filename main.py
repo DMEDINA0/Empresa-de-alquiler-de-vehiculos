@@ -1,65 +1,95 @@
-from Auto import Auto
-from Moto import Moto
-from Bicicleta import Bicicleta
-from Cliente import Cliente
-from Vehiculo import Vehiculo
+"""Clase principal con autenticación de usuario"""
+
+from database.config import SessionLocal
+from entities.cliente import Cliente
+from entities.vehiculo import Vehiculo
+from crud.alquiler_crud import AlquilerCRUD
+from crud.factura_crud import FacturaCRUD
+from vehiculos import Vehiculos
+from crud.usuario_crud import UsuarioService
+from uuid import uuid4
+from datetime import datetime
+
+from entities.vehiculo import Vehiculo
+from entities.categoria_vehiculo import CategoriaVehiculo
+from entities.alquiler import Alquiler  # si existe
 
 
 class Main:
     def __init__(self):
-        self.vehiculos = []
-        self.clientes = []
-        self._cargar_vehiculos()
+        self.db = SessionLocal()
+        self.usuario_service = UsuarioService(
+            self.db
+        )  # ✅ Instancia servicio de usuario
+        self.alquiler_service = AlquilerCRUD(self.db)
+        self.factura_service = FacturaCRUD(self.db)
+        self.vehiculos_service = Vehiculos(self.db)
 
-    # ---------- CARGA DE VEHÍCULOS ----------
-    def _cargar_vehiculos(self):
-        # Agregamos distintos tipos de vehículos
-        self.vehiculos.append(Auto(nombre="Auto Deportivo"))
-        self.vehiculos.append(Auto(nombre="Auto Familiar"))
-        self.vehiculos.append(Moto(nombre="Moto Scooter"))
-        self.vehiculos.append(Moto(nombre="Moto Eléctrica"))
-        self.vehiculos.append(Bicicleta(nombre="Bicicleta Montaña"))
-        self.vehiculos.append(Bicicleta(nombre="Bicicleta Urbana"))
+    def autenticar_usuario(self):
+        print("🔐 Iniciar sesión")
+        email = input("Email: ")
+        contraseña = input("Contraseña: ")
+        usuario = self.usuario_service.login(email, contraseña)
+        if not usuario:
+            print("Acceso denegado. Verifica tus credenciales.")
+            exit()
+        return usuario
 
-    # ---------- CLIENTES ----------
     def registrar_cliente(self):
-        while True:
-            try:
-                id_cliente = int(input("Ingrese ID del cliente: "))
-                nombre = input("Ingrese nombre del cliente: ")
-                cliente = Cliente(id_cliente=id_cliente, nombre=nombre)
-                self.clientes.append(cliente)
-                print(f"👤 Cliente registrado: {cliente.nombre}\n")
-                return cliente
-            except Exception as e:
-                print(f"Error al registrar cliente: {e}, intente nuevamente.")
+        try:
+            primer_nombre = input("Primer nombre: ")
+            segundo_nombre = input("Segundo nombre: ")
+            primer_apellido = input("Primer apellido: ")
+            segundo_apellido = input("Segundo apellido: ")
+            fecha_nacimiento = input("Fecha de nacimiento (YYYY-MM-DD): ")
+
+            nuevo_cliente = Cliente(
+                id_cliente=uuid4(),
+                primer_nombre=primer_nombre,
+                segundo_nombre=segundo_nombre,
+                primer_apellido=primer_apellido,
+                segundo_apellido=segundo_apellido,
+                fecha_nacimiento=datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date(),
+            )
+
+            self.db.add(nuevo_cliente)
+            self.db.commit()
+            self.db.refresh(nuevo_cliente)
+
+            print(f"👤 Cliente registrado: {nuevo_cliente.primer_nombre}")
+            return nuevo_cliente
+        except Exception as e:
+            print(f"Error al registrar cliente: {e}")
 
     def mostrar_clientes(self):
+        clientes = self.db.query(Cliente).all()
         print("\nLista de Clientes:")
-        if not self.clientes:
+        if not clientes:
             print("No hay clientes registrados.")
-        for cliente in self.clientes:
-            estado = f"Alquiló {cliente.vehiculo_alquilado.nombre}" if cliente.vehiculo_alquilado else "Sin alquiler activo"
-            print(f"ID: {cliente.id_cliente} | Nombre: {cliente.nombre} | Estado: {estado}")
+        for cliente in clientes:
+            print(
+                f"ID: {cliente.id_cliente} | Nombre: {cliente.primer_nombre} {cliente.primer_apellido}"
+            )
 
-    # ---------- VEHÍCULOS ----------
-    def mostrar_vehiculos(self, disponibles=True):
-        print("\nLista de Vehículos:")
-        for i, v in enumerate(self.vehiculos, start=1):
-            if disponibles and v.alquilado:
-                continue
-            estado = "Alquilado " if v.alquilado else "Disponible "
-            print(f"{i}. {v.nombre} | Tarifa: ${v.tarifa_hora}/hora | {estado}")
+    def mostrar_vehiculos(self):
+        self.vehiculos_service.listar_disponibles()
 
-    # ---------- ALQUILER ----------
-    def alquilar_vehiculo(self, cliente: Cliente):
-        print("\nSeleccione un vehículo disponible:")
+    def cargar_vehiculos(self):
+        self.vehiculos_service.cargar_vehiculos_iniciales()
 
-        disponibles = [v for v in self.vehiculos if not v.alquilado]
-        if not disponibles:
-            print("No hay vehículos disponibles en este momento.")
+    def alquilar_vehiculo(self, cliente):
+        if self.alquiler_service.obtener_alquiler_activo(cliente.id_cliente):
+            print(
+                "⚠️ Ya tienes un vehículo alquilado. Devuélvelo antes de alquilar otro."
+            )
             return
 
+        disponibles = self.db.query(Vehiculo).filter_by(disponible=True).all()
+        if not disponibles:
+            print("No hay vehículos disponibles.")
+            return
+
+        print("\nSeleccione un vehículo:")
         for i, v in enumerate(disponibles, start=1):
             print(f"{i}. {v.nombre} (${v.tarifa_hora}/hora)")
 
@@ -68,58 +98,49 @@ class Main:
             if opcion < 0 or opcion >= len(disponibles):
                 print("Opción inválida.")
                 return
-        except ValueError:
-            print("Debe ingresar un número.")
+            horas = int(input("¿Cuántas horas desea alquilarlo?: "))
+            vehiculo = disponibles[opcion]
+            alquiler = self.alquiler_service.crear_alquiler(
+                cliente.id_cliente, vehiculo.id_vehiculo, horas
+            )
+            self.factura_service.generar_factura(alquiler.id_alquiler)
+        except Exception as e:
+            print(f"Error en el alquiler: {e}")
+
+    def devolver_vehiculo(self, cliente):
+        alquiler = self.alquiler_service.obtener_alquiler_activo(cliente.id_cliente)
+        if not alquiler:
+            print("No tienes un vehículo alquilado.")
             return
+        self.alquiler_service.devolver_vehiculo(alquiler.id_alquiler)
 
-        vehiculo = disponibles[opcion]
-        horas = int(input("¿Cuántas horas desea alquilarlo?: "))
-        costo_estimado = vehiculo.calcular_costo(horas)
-
-        print(f"\n El costo de su alquiler es: ${costo_estimado}")
-        confirmar = input("¿Desea confirmar el alquiler? (s/n): ")
-
-        if confirmar.lower() == "s":
-            vehiculo.alquilar(horas)
-            cliente.vehiculo_alquilado = vehiculo
-            print(f"Gracias por su alquiler, {cliente.nombre}.")
-        else:
-            print("Alquiler cancelado.")
-
-    # ---------- DEVOLUCIÓN ----------
-    def devolver_vehiculo(self, cliente: Cliente):
-        if cliente.vehiculo_alquilado:
-            cliente.vehiculo_alquilado.devolver()
-            cliente.vehiculo_alquilado = None
-        else:
-            print("Usted no tiene un vehículo alquilado.")
-
-    # ---------- MENÚ PRINCIPAL ----------
     def menu(self):
         print("====== Bienvenido a la Empresa de Alquiler de Vehículos ======\n")
-
-        # Registro de cliente obligatorio
+        usuario = self.autenticar_usuario()  # ✅ Login antes de continuar
         cliente = self.registrar_cliente()
 
         while True:
             print("\n====== Menú Principal ======")
-            print("1. Alquilar vehículo")
-            print("2. Devolver vehículo")
-            print("3. Mostrar clientes")
-            print("4. Mostrar vehículos")
-            print("5. Salir")
+            print("1. Mostrar vehículos disponibles")
+            print("2. Mostrar clientes")
+            print("3. Alquilar vehículo")
+            print("4. Devolver vehículo")
+            print("5. Cargar vehículos iniciales")
+            print("6. Salir")
 
             opcion = input("Seleccione una opción: ")
 
             if opcion == "1":
-                self.alquilar_vehiculo(cliente)
+                self.mostrar_vehiculos()
             elif opcion == "2":
-                self.devolver_vehiculo(cliente)
-            elif opcion == "3":
                 self.mostrar_clientes()
+            elif opcion == "3":
+                self.alquilar_vehiculo(cliente)
             elif opcion == "4":
-                self.mostrar_vehiculos(disponibles=False)
+                self.devolver_vehiculo(cliente)
             elif opcion == "5":
+                self.cargar_vehiculos()
+            elif opcion == "6":
                 print("Gracias por usar el sistema de alquiler.")
                 break
             else:
@@ -132,4 +153,3 @@ class Main:
 if __name__ == "__main__":
     app = Main()
     app.menu()
-

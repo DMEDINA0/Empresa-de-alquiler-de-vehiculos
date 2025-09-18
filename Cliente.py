@@ -1,9 +1,20 @@
-from typing import Optional
-from pydantic import BaseModel, Field
-from Vehiculo import Vehiculo
+from database.config import Base
+from sqlalchemy import Column, String, Date
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from uuid import uuid4
 
 
-class Cliente(BaseModel):
-    id_cliente: int = Field(..., gt=0, description="ID único del cliente")
-    nombre: str = Field(..., min_length=2, description="Nombre del cliente")
-    vehiculo_alquilado: Optional[Vehiculo] = None
+class Cliente(Base):
+    __tablename__ = "cliente"
+
+    id_cliente = Column(
+        UUID(as_uuid=True), primary_key=True, default=uuid4, unique=True, nullable=False
+    )
+    primer_nombre = Column(String, nullable=False)
+    segundo_nombre = Column(String)
+    primer_apellido = Column(String, nullable=False)
+    segundo_apellido = Column(String)
+    fecha_nacimiento = Column(Date, nullable=False)
+
+    alquileres = relationship("Alquiler", back_populates="cliente")

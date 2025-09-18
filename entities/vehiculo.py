@@ -16,13 +16,15 @@ class Vehiculo(Base):
     tarifa_hora = Column(Integer, nullable=False)
     disponible = Column(Boolean, default=True)
 
-    # Relación con categoría
+    # Relación con CategoriaVehiculo
     id_categoria = Column(
-        UUID(as_uuid=True), ForeignKey("categoria_vehiculo.id_categoria"), nullable=True
+        UUID(as_uuid=True),
+        ForeignKey("categoria_vehiculo.id_categoria"),
+        nullable=False,
     )
     categoria = relationship("CategoriaVehiculo", back_populates="vehiculos")
 
-    # Relación con alquileres
+    # Relación con Alquiler (si existe)
     alquileres = relationship("Alquiler", back_populates="vehiculo")
 
     # Auditoría

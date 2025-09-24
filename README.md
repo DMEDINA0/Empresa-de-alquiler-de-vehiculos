@@ -1,7 +1,10 @@
 # Empresa-de-alquiler-de-vehiculos
+
 Empresa de Alquiler de Vehículos
 
-Este proyecto es una aplicación de consola desarrollada en Python que simula el funcionamiento de una empresa de alquiler de vehículos. Utiliza principios de **Programación Orientada a Objetos (POO)** y validación de datos con **Pydantic** para gestionar clientes, vehículos y operaciones de alquiler y devolución.
+Este proyecto es una aplicación de consola desarrollada en Python que simula el funcionamiento de una empresa de alquiler de vehículos. Utiliza principios de **Programación Orientada a Objetos (POO)**, validación de datos con **Pydantic**, y persistencia con **SQLAlchemy ORM**. La base de datos está alojada en **NEON**, un motor PostgreSQL en la nube.
+
+---
 
 ## ¿Qué hace el código?
 
@@ -11,6 +14,11 @@ Este proyecto es una aplicación de consola desarrollada en Python que simula el
 - Asocia un vehículo alquilado a cada cliente.
 - Permite devolver vehículos y liberar su estado.
 - Muestra listas de clientes y vehículos con su estado actual.
+- Genera facturas automáticas por cada alquiler.
+- Permite consultar el historial de facturas por cliente.
+- Incluye autenticación de usuarios con validación de credenciales.
+
+---
 
 ## Clases del Proyecto
 
@@ -29,28 +37,25 @@ Clase base que define atributos y métodos comunes para todos los vehículos. Ut
 - `devolver()`: libera el vehículo y borra la información del alquiler.
 - `calcular_costo(horas)`: calcula el costo total del alquiler.
 
-### `Auto.py`
-Hereda de `Vehiculo`. Representa un automóvil con tarifa fija de `$20,000` por hora.
-
-### `Moto.py`
-Hereda de `Vehiculo`. Representa una moto con tarifa fija de `$10,000` por hora.
-
-### `Bicicleta.py`
-Hereda de `Vehiculo`. Representa una bicicleta con tarifa fija de `$5,000` por hora.
+### `Auto.py`, `Moto.py`, `Bicicleta.py`
+Heredan de `Vehiculo`. Cada clase representa un tipo de vehículo con tarifa fija por hora.
 
 ### `Cliente.py`
 Modelo de cliente validado con Pydantic:
-- `id_cliente`: identificador único.
+- `id_cliente`: identificador único UUID.
 - `nombre`: nombre del cliente.
 - `vehiculo_alquilado`: referencia al vehículo actualmente alquilado.
 
 ### `Main.py`
 Clase principal que gestiona la lógica del sistema:
 - Carga inicial de vehículos.
-- Registro de clientes.
+- Registro y selección de clientes.
 - Menú interactivo para alquilar, devolver y consultar información.
 - Control de estado de vehículos y clientes.
+- Generación de facturas.
+- Visualización del historial de facturas.
 
+---
 
 ## ¿Cómo ejecutar el proyecto?
 
@@ -59,14 +64,16 @@ Clase principal que gestiona la lógica del sistema:
    git clone https://github.com/tu-usuario/empresa-alquiler-vehiculos.git
    cd empresa-alquiler-vehiculos
 
-2. Instala dependencias
-- Pydantic
+2. Crea y activa un entorno virtual:
+   python -m venv env
+   source env/bin/activate  # En Linux/macOS
+   .\env\Scripts\activate    # En Windows
 
-3. Ejecuta el programa 
-- main.py
+3. Instala las dependencias:
+   pip install -r requirements.txt
 
-## Principios de POO aplicados
-- Encapsulamiento: atributos controlados y protegidos.
-- Herencia: clases Auto, Moto, Bicicleta heredan de Vehiculo.
-- Polimorfismo: cada clase redefine calcular_costo() según su lógica.
-- Abstracción: el usuario interactúa con una interfaz clara sin conocer la lógica interna
+4. Configura tu archivo .env en la URL de conexion a NEON:
+   DATABASE_URL=postgresql+psycopg2://usuario:contraseña@neon-host/dbname
+
+5. Ejecuta el programa:
+   python main.py

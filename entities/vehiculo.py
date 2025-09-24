@@ -1,8 +1,7 @@
 """
-Modelo que representa un vehículo disponible para alquiler.
+Entidad que representa un vehículo disponible para alquiler.
 
-Incluye información como nombre, tarifa por hora, disponibilidad,
-categoría asociada y datos de auditoría.
+Incluye nombre, tarifa por hora, disponibilidad, categoría asociada y datos de auditoría.
 """
 
 from database.config import Base
@@ -24,7 +23,9 @@ class Vehiculo(Base):
     disponible = Column(Boolean, default=True)
 
     id_categoria = Column(
-        UUID(as_uuid=True), ForeignKey("categoria_vehiculo.id_categoria"), nullable=True
+        UUID(as_uuid=True),
+        ForeignKey("categoria_vehiculo.id_categoria"),
+        nullable=False,
     )
     categoria = relationship("CategoriaVehiculo", back_populates="vehiculos")
 

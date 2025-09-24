@@ -1,5 +1,7 @@
 """
-Operaciones CRUD para la entidad Vehiculo
+Clase que implementa operaciones CRUD para la entidad Vehiculo.
+
+Permite crear, consultar, actualizar, eliminar vehículos y gestionar su disponibilidad.
 """
 
 from entities.vehiculo import Vehiculo
@@ -7,7 +9,6 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import uuid4
 from datetime import datetime
-
 
 
 class VehiculoCRUD:

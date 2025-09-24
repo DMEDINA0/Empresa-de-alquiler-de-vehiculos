@@ -1,27 +1,27 @@
 """
-Operaciones CRUD para la entidad Factura
+Clase que implementa operaciones CRUD para la entidad Factura.
+
+Permite generar, consultar, actualizar y eliminar facturas asociadas a alquileres de vehículos.
 """
 
 from entities.factura import Factura
+from entities.alquiler import Alquiler
+from entities.vehiculo import Vehiculo
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import uuid4
 from datetime import datetime
 
 
-
 class FacturaCRUD:
     def __init__(self, db: Session):
-        """Inicializa el servicio con la sesión de base de datos"""
         self.db = db
 
-    def generar_factura(
-        self,
-        alquiler_id: str,
-        monto_total: int,
-        id_usuario_creacion: str,
-    ) -> Factura:
-        """Generar una nueva factura"""
+    def generar_factura(self, alquiler_id: str, id_usuario_creacion: str) -> Factura:
+        alquiler = self.db.query(Alquiler).get(alquiler_id)
+        vehiculo = self.db.query(Vehiculo).get(alquiler.id_vehiculo)
+        monto_total = alquiler.horas * vehiculo.tarifa_hora
+
         nueva_factura = Factura(
             id_factura=uuid4(),
             fecha_emision=datetime.utcnow(),
@@ -36,21 +36,17 @@ class FacturaCRUD:
         return nueva_factura
 
     def obtener_factura_por_id(self, id_factura: str) -> Optional[Factura]:
-        """Obtener una factura por su ID"""
         return self.db.query(Factura).filter_by(id_factura=id_factura).first()
 
     def listar_facturas(self) -> List[Factura]:
-        """Listar todas las facturas"""
         return self.db.query(Factura).all()
 
     def listar_facturas_por_alquiler(self, alquiler_id: str) -> List[Factura]:
-        """Listar facturas asociadas a un alquiler"""
         return self.db.query(Factura).filter_by(id_alquiler=alquiler_id).all()
 
     def actualizar_factura(
         self, id_factura: str, nuevos_datos: dict
     ) -> Optional[Factura]:
-        """Actualizar los datos de una factura"""
         factura = self.obtener_factura_por_id(id_factura)
         if factura:
             for key, value in nuevos_datos.items():
@@ -62,7 +58,6 @@ class FacturaCRUD:
         return factura
 
     def eliminar_factura(self, id_factura: str) -> bool:
-        """Eliminar una factura permanentemente"""
         factura = self.obtener_factura_por_id(id_factura)
         if factura:
             self.db.delete(factura)

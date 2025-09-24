@@ -1,28 +1,25 @@
 """
-Operaciones CRUD para la entidad Alquiler
+Clase que implementa operaciones CRUD para la entidad Alquiler.
+
+Permite crear, consultar, actualizar y eliminar registros de alquiler,
+así como gestionar la devolución de vehículos y obtener alquileres activos.
 """
 
 from entities.alquiler import Alquiler
+from entities.vehiculo import Vehiculo
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import uuid4
 from datetime import datetime
 
 
-
 class AlquilerCRUD:
     def __init__(self, db: Session):
-        """Inicializa el servicio con la sesión de base de datos"""
         self.db = db
 
     def crear_alquiler(
-        self,
-        cliente_id: str,
-        vehiculo_id: str,
-        horas: int,
-        id_usuario_creacion: str,
+        self, cliente_id: str, vehiculo_id: str, horas: int, id_usuario_creacion: str
     ) -> Alquiler:
-        """Crear un nuevo alquiler"""
         nuevo_alquiler = Alquiler(
             id_alquiler=uuid4(),
             fecha_inicio=datetime.utcnow(),
@@ -33,26 +30,27 @@ class AlquilerCRUD:
             fecha_creacion=datetime.utcnow(),
         )
         self.db.add(nuevo_alquiler)
+
+        vehiculo = self.db.query(Vehiculo).get(vehiculo_id)
+        if vehiculo:
+            vehiculo.disponible = False
+
         self.db.commit()
         self.db.refresh(nuevo_alquiler)
         return nuevo_alquiler
 
     def obtener_alquiler_por_id(self, id_alquiler: str) -> Optional[Alquiler]:
-        """Obtener un alquiler por su ID"""
         return self.db.query(Alquiler).filter_by(id_alquiler=id_alquiler).first()
 
     def listar_alquileres(self) -> List[Alquiler]:
-        """Listar todos los alquileres"""
         return self.db.query(Alquiler).all()
 
     def listar_alquileres_por_cliente(self, cliente_id: str) -> List[Alquiler]:
-        """Listar alquileres de un cliente específico"""
         return self.db.query(Alquiler).filter_by(id_cliente=cliente_id).all()
 
     def actualizar_alquiler(
         self, id_alquiler: str, nuevos_datos: dict
     ) -> Optional[Alquiler]:
-        """Actualizar los datos de un alquiler"""
         alquiler = self.obtener_alquiler_por_id(id_alquiler)
         if alquiler:
             for key, value in nuevos_datos.items():
@@ -64,7 +62,6 @@ class AlquilerCRUD:
         return alquiler
 
     def eliminar_alquiler(self, id_alquiler: str) -> bool:
-        """Eliminar un alquiler permanentemente"""
         alquiler = self.obtener_alquiler_por_id(id_alquiler)
         if alquiler:
             self.db.delete(alquiler)
@@ -73,21 +70,22 @@ class AlquilerCRUD:
         return False
 
     def devolver_vehiculo(self, id_alquiler: str) -> Optional[Alquiler]:
-        """Registrar la devolución del vehículo en el alquiler"""
         alquiler = self.obtener_alquiler_por_id(id_alquiler)
         if alquiler and not alquiler.fecha_fin:
             alquiler.fecha_fin = datetime.utcnow()
             alquiler.fecha_actualizacion = datetime.utcnow()
+
+            vehiculo = self.db.query(Vehiculo).get(alquiler.id_vehiculo)
+            if vehiculo:
+                vehiculo.disponible = True
+
             self.db.commit()
             self.db.refresh(alquiler)
         return alquiler
 
-    def obtener_alquiler_activo_por_cliente(
-        self, cliente_id: str
-    ) -> Optional[Alquiler]:
-        """Obtener el alquiler activo de un cliente (sin fecha de fin)"""
+    def obtener_alquiler_activo(self, cliente_id: str) -> Optional[Alquiler]:
         return (
             self.db.query(Alquiler)
-            .filter_by(id_cliente=cliente_id, fecha_fin=None)
+            .filter(Alquiler.id_cliente == cliente_id, Alquiler.fecha_fin == None)
             .first()
         )

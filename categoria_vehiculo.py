@@ -1,3 +1,9 @@
+"""
+Modelo que representa una categoría de vehículos.
+
+Incluye nombre, descripción y relación con los vehículos asociados.
+"""
+
 from database.config import Base
 from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
@@ -13,11 +19,9 @@ class CategoriaVehiculo(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid4, unique=True, nullable=False
     )
     nombre_categoria = Column(String(100), nullable=False)
-    descripcion = Column(String(255), nullable=True)  # ✅ Explicitamente nullable
+    descripcion = Column(String(255), nullable=True)
 
-    vehiculos = relationship(
-        "Vehiculo", back_populates="categoria"
-    )  # ✅ Relación inversa esperada en Vehiculo
+    vehiculos = relationship("Vehiculo", back_populates="categoria")
 
     # Auditoría
     id_usuario_creacion = Column(UUID(as_uuid=True), nullable=False)

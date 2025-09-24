@@ -3,28 +3,32 @@ Script para probar la conexión a PostgreSQL (Neon)
 """
 
 import sys
-
+from uuid import uuid4
+from datetime import datetime
 from database.config import DATABASE_URL, engine
 from sqlalchemy import text
+from entities.usuario import Usuario
+from entities.cliente import Cliente
+from entities.vehiculo import Vehiculo
+from entities.categoria_vehiculo import CategoriaVehiculo
+from entities.alquiler import Alquiler
+from entities.factura import Factura
+import bcrypt
 
 
 def test_connection():
     """Probar la conexión a la base de datos"""
     print("=== PRUEBA DE CONEXION A POSTGRESQL (NEON) ===\n")
-    print(f"URL de conexion: {DATABASE_URL}")
-    print()
+    print(f"URL de conexion: {DATABASE_URL}\n")
 
     try:
-        # Intentar conectar
         with engine.connect() as connection:
             print("[OK] Conexion exitosa a PostgreSQL!")
 
-            # Probar una consulta simple
             result = connection.execute(text("SELECT version() as version"))
             version = result.fetchone()
             print(f"[OK] Version de PostgreSQL: {version[0]}")
 
-            # Verificar si la base de datos existe
             result = connection.execute(
                 text(
                     "SELECT datname FROM pg_database WHERE datname = current_database()"
@@ -37,7 +41,6 @@ def test_connection():
             else:
                 print("[WARNING] No se pudo verificar la base de datos actual")
 
-            # Listar tablas disponibles
             print("\nTablas disponibles:")
             result = connection.execute(
                 text(
@@ -86,11 +89,9 @@ def create_admin_user():
 
     try:
         from database.config import SessionLocal
-        from entities.usuario import Usuario
 
         db = SessionLocal()
 
-        # Verificar si ya existe un admin
         admin_exists = db.query(Usuario).filter(Usuario.es_admin == True).first()
 
         if admin_exists:
@@ -98,13 +99,24 @@ def create_admin_user():
             db.close()
             return True
 
-        # Crear usuario admin
+        contraseña_plana = "admin123"
+        contraseña_hash = bcrypt.hashpw(
+            contraseña_plana.encode(), bcrypt.gensalt()
+        ).decode()
+
         admin_user = Usuario(
-            nombre="Administrador",
+            id_usuario=uuid4(),
+            primer_nombre="Admin",
+            segundo_nombre="",
+            primer_apellido="System",
+            segundo_apellido="",
+            rol_usuario="admin",
             email="admin@system.com",
-            telefono="000-000-0000",
-            activo=True,
+            contraseña=contraseña_hash,
             es_admin=True,
+            id_usuario_creacion=uuid4(),
+            fecha_creacion=datetime.utcnow(),
+            fecha_actualizacion=datetime.utcnow(),
         )
 
         db.add(admin_user)
@@ -114,7 +126,7 @@ def create_admin_user():
         print(f"[OK] Usuario administrador creado exitosamente")
         print(f"     ID: {admin_user.id_usuario}")
         print(f"     Email: {admin_user.email}")
-        print(f"     Nombre: {admin_user.nombre}")
+        print(f"     Nombre: {admin_user.primer_nombre} {admin_user.primer_apellido}")
 
         db.close()
         return True
@@ -127,13 +139,10 @@ def create_admin_user():
 if __name__ == "__main__":
     print("Iniciando prueba de conexion...\n")
 
-    # Probar conexion
     if test_connection():
         print("\n" + "=" * 50)
-        # Probar creacion de tablas
         if test_tables():
             print("\n" + "=" * 50)
-            # Crear usuario administrador
             create_admin_user()
 
         print("\n[SUCCESS] Configuracion completada!")

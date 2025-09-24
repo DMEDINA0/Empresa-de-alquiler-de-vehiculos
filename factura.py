@@ -1,3 +1,9 @@
+"""
+Servicio para generación de facturas.
+
+Calcula el monto total de un alquiler y registra la factura correspondiente.
+"""
+
 from entities.factura import Factura
 from entities.alquiler import Alquiler
 from entities.vehiculo import Vehiculo

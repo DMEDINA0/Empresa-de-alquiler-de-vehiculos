@@ -1,3 +1,9 @@
+"""
+Servicio para gestión de alquileres de vehículos.
+
+Permite crear nuevos alquileres, devolver vehículos y consultar alquileres activos.
+"""
+
 from entities.alquiler import Alquiler
 from entities.vehiculo import Vehiculo
 from uuid import uuid4

@@ -1,15 +1,12 @@
 """
-Carga inicial y visualización de vehículos
+Gestión de vehículos disponibles para alquiler.
+
+Permite cargar un conjunto inicial de vehículos y listar los que están disponibles.
 """
 
 from entities.vehiculo import Vehiculo
 from entities.categoria_vehiculo import CategoriaVehiculo
 from crud.vehiculo_crud import VehiculoCRUD
-
-
-
-
-
 from uuid import uuid4, UUID
 from datetime import datetime
 
@@ -24,23 +21,26 @@ class Vehiculos:
             print("⚠️ Los vehículos ya están cargados.")
             return
 
-        # ✅ UUID válido con guiones
         admin_id = UUID("00000000-0000-0000-0000-000000000000")
 
-        # Crear categoría por defecto
-        categoria = CategoriaVehiculo(
-            id_categoria=uuid4(),
-            nombre_categoria="General",
-            descripcion="Categoría por defecto",
-            id_usuario_creacion=admin_id,
-            id_usuario_edicion=None,
-            fecha_creacion=datetime.now(),
-            fecha_actualizacion=datetime.now(),
+        categoria = (
+            self.db.query(CategoriaVehiculo)
+            .filter_by(nombre_categoria="General")
+            .first()
         )
-        self.db.add(categoria)
-        self.db.commit()
+        if not categoria:
+            categoria = CategoriaVehiculo(
+                id_categoria=uuid4(),
+                nombre_categoria="General",
+                descripcion="Categoría por defecto",
+                id_usuario_creacion=admin_id,
+                id_usuario_edicion=None,
+                fecha_creacion=datetime.utcnow(),
+                fecha_actualizacion=datetime.utcnow(),
+            )
+            self.db.add(categoria)
+            self.db.commit()
 
-        # No necesitas refresh si ya tienes el objeto en memoria
         lista = [
             {"nombre": "Auto Deportivo", "tarifa_hora": 20000},
             {"nombre": "Auto Familiar", "tarifa_hora": 18000},
@@ -49,12 +49,6 @@ class Vehiculos:
             {"nombre": "Bicicleta Montaña", "tarifa_hora": 5000},
             {"nombre": "Bicicleta Urbana", "tarifa_hora": 4000},
         ]
-
-
-
-
-
-
 
         for item in lista:
             self.crud.crear_vehiculo(
@@ -66,18 +60,10 @@ class Vehiculos:
 
         print("🚗 Vehículos cargados correctamente.")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def listar_disponibles(self):
+        disponibles = self.db.query(Vehiculo).filter_by(disponible=True).all()
+        print("\n🚗 Vehículos disponibles:")
+        if not disponibles:
+            print("No hay vehículos disponibles.")
+        for v in disponibles:
+            print(f"- {v.nombre} (${v.tarifa_hora}/hora)")

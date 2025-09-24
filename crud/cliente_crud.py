@@ -1,9 +1,14 @@
+"""
+Clase que implementa operaciones CRUD para la entidad Cliente.
+
+Permite crear, consultar, actualizar y eliminar registros de clientes en la base de datos.
+"""
+
 from entities.cliente import Cliente
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import uuid4
 from datetime import datetime
-
 
 
 class ClienteCRUD:
@@ -28,7 +33,7 @@ class ClienteCRUD:
             fecha_nacimiento=datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date(),
             id_usuario_creacion=id_usuario_creacion,
             fecha_creacion=datetime.utcnow(),
-            fecha_actualizacion=datetime.utcnow(),  # ✅ Añadido para consistencia
+            fecha_actualizacion=datetime.utcnow(),
         )
         self.db.add(nuevo_cliente)
         self.db.commit()

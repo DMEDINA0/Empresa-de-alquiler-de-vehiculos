@@ -1,26 +1,28 @@
-"""Clase principal con autenticación de usuario"""
+"""
+Clase principal del sistema de alquiler de vehículos.
+
+Gestiona la autenticación de usuarios, registro y selección de clientes,
+alquiler y devolución de vehículos, generación de facturas y navegación
+por el menú principal.
+"""
 
 from database.config import SessionLocal
 from entities.cliente import Cliente
 from entities.vehiculo import Vehiculo
+from entities.alquiler import Alquiler
+from entities.factura import Factura
 from crud.alquiler_crud import AlquilerCRUD
 from crud.factura_crud import FacturaCRUD
-from vehiculos import Vehiculos
 from crud.usuario_crud import UsuarioService
+from vehiculos import Vehiculos
 from uuid import uuid4
 from datetime import datetime
-
-from entities.vehiculo import Vehiculo
-from entities.categoria_vehiculo import CategoriaVehiculo
-from entities.alquiler import Alquiler  # si existe
 
 
 class Main:
     def __init__(self):
         self.db = SessionLocal()
-        self.usuario_service = UsuarioService(
-            self.db
-        )  # ✅ Instancia servicio de usuario
+        self.usuario_service = UsuarioService(self.db)
         self.alquiler_service = AlquilerCRUD(self.db)
         self.factura_service = FacturaCRUD(self.db)
         self.vehiculos_service = Vehiculos(self.db)
@@ -35,7 +37,7 @@ class Main:
             exit()
         return usuario
 
-    def registrar_cliente(self):
+    def registrar_cliente(self, usuario):
         try:
             primer_nombre = input("Primer nombre: ")
             segundo_nombre = input("Segundo nombre: ")
@@ -50,6 +52,9 @@ class Main:
                 primer_apellido=primer_apellido,
                 segundo_apellido=segundo_apellido,
                 fecha_nacimiento=datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date(),
+                id_usuario_creacion=usuario.id_usuario,
+                fecha_creacion=datetime.utcnow(),
+                fecha_actualizacion=datetime.utcnow(),
             )
 
             self.db.add(nuevo_cliente)
@@ -59,7 +64,30 @@ class Main:
             print(f"👤 Cliente registrado: {nuevo_cliente.primer_nombre}")
             return nuevo_cliente
         except Exception as e:
+            self.db.rollback()
             print(f"Error al registrar cliente: {e}")
+            return None
+
+    def seleccionar_cliente(self, usuario):
+        clientes = self.db.query(Cliente).all()
+
+        print("\nSeleccione un cliente existente:")
+        for i, c in enumerate(clientes, start=1):
+            print(f"{i}. {c.primer_nombre} {c.primer_apellido} (ID: {c.id_cliente})")
+        print("0. Registrar nuevo cliente")
+
+        try:
+            opcion = int(input("Opción: "))
+            if opcion == 0:
+                return self.registrar_cliente(usuario)
+            elif 1 <= opcion <= len(clientes):
+                return clientes[opcion - 1]
+            else:
+                print("Opción inválida.")
+                return self.seleccionar_cliente(usuario)
+        except ValueError:
+            print("Entrada inválida. Intente de nuevo.")
+            return self.seleccionar_cliente(usuario)
 
     def mostrar_clientes(self):
         clientes = self.db.query(Cliente).all()
@@ -101,11 +129,17 @@ class Main:
             horas = int(input("¿Cuántas horas desea alquilarlo?: "))
             vehiculo = disponibles[opcion]
             alquiler = self.alquiler_service.crear_alquiler(
-                cliente.id_cliente, vehiculo.id_vehiculo, horas
+                cliente.id_cliente,
+                vehiculo.id_vehiculo,
+                horas,
+                cliente.id_usuario_creacion,
             )
-            self.factura_service.generar_factura(alquiler.id_alquiler)
+            self.factura_service.generar_factura(
+                alquiler.id_alquiler, cliente.id_usuario_creacion
+            )
         except Exception as e:
             print(f"Error en el alquiler: {e}")
+            self.db.rollback()
 
     def devolver_vehiculo(self, cliente):
         alquiler = self.alquiler_service.obtener_alquiler_activo(cliente.id_cliente)
@@ -114,10 +148,33 @@ class Main:
             return
         self.alquiler_service.devolver_vehiculo(alquiler.id_alquiler)
 
+    def mostrar_facturas(self, cliente):
+        facturas = (
+            self.db.query(Factura)
+            .join(Alquiler)
+            .filter(Alquiler.id_cliente == cliente.id_cliente)
+            .all()
+        )
+
+        print("\n📄 Facturas del cliente:")
+        if not facturas:
+            print("No hay facturas registradas.")
+            return
+
+        for f in facturas:
+            print(
+                f"- Fecha: {f.fecha_emision.strftime('%Y-%m-%d %H:%M:%S')} | "
+                f"Monto: ${f.monto_total:,} | ID Alquiler: {f.id_alquiler}"
+            )
+
     def menu(self):
         print("====== Bienvenido a la Empresa de Alquiler de Vehículos ======\n")
-        usuario = self.autenticar_usuario()  # ✅ Login antes de continuar
-        cliente = self.registrar_cliente()
+        usuario = self.autenticar_usuario()
+        cliente = self.seleccionar_cliente(usuario)
+
+        if not cliente:
+            print("❌ No se pudo continuar sin cliente. Cerrando sesión.")
+            return
 
         while True:
             print("\n====== Menú Principal ======")
@@ -127,6 +184,7 @@ class Main:
             print("4. Devolver vehículo")
             print("5. Cargar vehículos iniciales")
             print("6. Salir")
+            print("7. Ver facturas")
 
             opcion = input("Seleccione una opción: ")
 
@@ -143,13 +201,12 @@ class Main:
             elif opcion == "6":
                 print("Gracias por usar el sistema de alquiler.")
                 break
+            elif opcion == "7":
+                self.mostrar_facturas(cliente)
             else:
                 print("Opción no válida.")
 
 
-# ==========================
-# EJECUCIÓN
-# ==========================
 if __name__ == "__main__":
     app = Main()
     app.menu()

@@ -1,15 +1,19 @@
-"""Funciones de seguridad para manejo de contraseñas"""
+"""
+Servicio para gestión de usuarios: registro, autenticación y listado.
+"""
 
 from passlib.context import CryptContext
 
-# Configuración del algoritmo de encriptación
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def hash_password(password: str) -> str:
     """
     Encripta una contraseña en texto plano.
     """
     return pwd_context.hash(password)
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """

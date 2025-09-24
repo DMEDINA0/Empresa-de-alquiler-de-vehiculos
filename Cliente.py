@@ -1,3 +1,9 @@
+"""
+Modelo que representa a un cliente del sistema de alquiler.
+
+Incluye datos personales y relación con sus alquileres.
+"""
+
 from database.config import Base
 from sqlalchemy import Column, String, Date
 from sqlalchemy.dialects.postgresql import UUID

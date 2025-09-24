@@ -1,4 +1,9 @@
-"""Servicio para operaciones de usuario con autenticación"""
+"""
+Servicio para gestión de usuarios.
+
+Permite registrar nuevos usuarios, validar credenciales de acceso
+y listar usuarios registrados en el sistema.
+"""
 
 from entities.usuario import Usuario
 from database.config import SessionLocal
@@ -8,7 +13,7 @@ from datetime import datetime
 from security import (
     hash_password,
     verify_password,
-)  # ✅ Importa funciones de seguridad
+)
 
 
 class UsuarioService:
@@ -23,9 +28,9 @@ class UsuarioService:
         segundo_apellido: str,
         rol_usuario: str,
         email: str,
-        contraseña: str,  # ✅ Nuevo parámetro
+        contraseña: str,
         id_cliente: str = None,
-        id_usuario_creacion: UUID = UUID("00000000-0000-0000-0000-000000000000"),  # admin por defecto
+        id_usuario_creacion: UUID = UUID("00000000-0000-0000-0000-000000000000"),
     ) -> Usuario:
         nuevo_usuario = Usuario(
             id_usuario=uuid4(),
@@ -35,7 +40,7 @@ class UsuarioService:
             segundo_apellido=segundo_apellido,
             rol_usuario=rol_usuario,
             email=email,
-            contraseña=hash_password(contraseña),  # ✅ Encripta la contraseña
+            contraseña=hash_password(contraseña),
             id_cliente=id_cliente,
             id_usuario_creacion=id_usuario_creacion,
             fecha_creacion=datetime.utcnow(),
@@ -63,5 +68,3 @@ class UsuarioService:
             print(
                 f"{u.id_usuario} | {u.primer_nombre} {u.primer_apellido} | Rol: {u.rol_usuario} | Email: {u.email}"
             )
-
-

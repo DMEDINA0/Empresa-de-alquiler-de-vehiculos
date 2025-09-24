@@ -1,3 +1,9 @@
+"""
+Entidad que representa a un cliente del sistema.
+
+Incluye datos personales, auditoría de creación y relaciones con alquileres y usuario.
+"""
+
 from database.config import Base
 from sqlalchemy import Column, String, Date, DateTime
 from sqlalchemy.dialects.postgresql import UUID
@@ -18,6 +24,7 @@ class Cliente(Base):
     segundo_apellido = Column(String(100), nullable=True)
     fecha_nacimiento = Column(Date, nullable=False)
 
+    # Auditoría
     id_usuario_creacion = Column(UUID(as_uuid=True), nullable=False)
     id_usuario_edicion = Column(UUID(as_uuid=True), nullable=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -26,6 +33,4 @@ class Cliente(Base):
     )
 
     alquileres = relationship("Alquiler", back_populates="cliente")
-    usuario = relationship(
-        "Usuario", back_populates="cliente", cascade="all, delete-orphan"
-    )
+    usuario = relationship("Usuario", back_populates="cliente")

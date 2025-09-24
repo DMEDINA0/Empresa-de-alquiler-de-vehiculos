@@ -1,3 +1,9 @@
+"""
+Clase que implementa operaciones CRUD para la entidad CategoriaVehiculo.
+
+Permite crear, consultar, actualizar y eliminar categorías de vehículos.
+"""
+
 from entities.categoria_vehiculo import CategoriaVehiculo
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -21,7 +27,7 @@ class CategoriaVehiculoCRUD:
             descripcion=descripcion,
             id_usuario_creacion=id_usuario_creacion,
             fecha_creacion=datetime.utcnow(),
-            fecha_actualizacion=datetime.utcnow(),  # ✅ Añadido para consistencia
+            fecha_actualizacion=datetime.utcnow(),
         )
         self.db.add(nueva_categoria)
         self.db.commit()
@@ -49,7 +55,7 @@ class CategoriaVehiculoCRUD:
                 if hasattr(categoria, key) and key not in [
                     "id_categoria",
                     "id_usuario_creacion",
-                ]:  # ✅ Protege campos sensibles
+                ]:
                     setattr(categoria, key, value)
             categoria.fecha_actualizacion = datetime.utcnow()
             self.db.commit()

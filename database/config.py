@@ -1,5 +1,7 @@
 """
-Configuración de la base de datos PostgreSQL con Neon
+Script de prueba para conexión y configuración inicial de PostgreSQL (Neon).
+ 
+Verifica conexión, crea tablas y genera un usuario administrador por defecto.
 """
 
 import os

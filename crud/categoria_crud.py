@@ -15,24 +15,20 @@ class CategoriaVehiculoCRUD:
     def __init__(self, db: Session):
         self.db = db
 
-    def crear_categoria(
-        self,
-        nombre_categoria: str,
-        descripcion: str = "",
-        id_usuario_creacion: Optional[str] = None,
-    ) -> CategoriaVehiculo:
+    def crear_categoria(self, categoria_data: dict) -> CategoriaVehiculo:
         nueva_categoria = CategoriaVehiculo(
-            id_categoria=uuid4(),
-            nombre_categoria=nombre_categoria,
-            descripcion=descripcion,
-            id_usuario_creacion=id_usuario_creacion,
-            fecha_creacion=datetime.utcnow(),
-            fecha_actualizacion=datetime.utcnow(),
+           id_categoria=uuid4(),
+           nombre_categoria=categoria_data["nombre_categoria"],
+           descripcion=categoria_data.get("descripcion", ""),
+           id_usuario_creacion=categoria_data.get("id_usuario_creacion"),
+           fecha_creacion=datetime.utcnow(),
+           fecha_actualizacion=datetime.utcnow(),
         )
         self.db.add(nueva_categoria)
         self.db.commit()
         self.db.refresh(nueva_categoria)
         return nueva_categoria
+
 
     def obtener_categoria_por_id(
         self, id_categoria: str

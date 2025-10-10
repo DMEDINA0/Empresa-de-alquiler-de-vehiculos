@@ -1,6 +1,5 @@
 from typing import List
 from uuid import UUID
-
 from crud.alquiler_crud import AlquilerCRUD
 from database.config import get_db
 from fastapi import APIRouter, Depends, HTTPException, status

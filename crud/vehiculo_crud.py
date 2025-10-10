@@ -35,8 +35,8 @@ class VehiculoCRUD:
     def obtener_vehiculo_por_id(self, id_vehiculo: str) -> Optional[Vehiculo]:
         return self.db.query(Vehiculo).filter_by(id_vehiculo=id_vehiculo).first()
 
-    def listar_vehiculos(self) -> List[Vehiculo]:
-        return self.db.query(Vehiculo).all()
+    def listar_vehiculos(self, skip: int = 0, limit: int = 100) -> List[Vehiculo]:
+        return self.db.query(Vehiculo).offset(skip).limit(limit).all()
 
     def listar_vehiculos_disponibles(self) -> List[Vehiculo]:
         return self.db.query(Vehiculo).filter_by(disponible=True).all()

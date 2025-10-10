@@ -1,6 +1,5 @@
 """
 Clase que implementa operaciones CRUD para la entidad Cliente.
-
 Permite crear, consultar, actualizar y eliminar registros de clientes en la base de datos.
 """
 
@@ -8,7 +7,7 @@ from entities.cliente import Cliente
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, date
 
 
 class ClienteCRUD:
@@ -21,19 +20,23 @@ class ClienteCRUD:
         segundo_nombre: Optional[str],
         primer_apellido: str,
         segundo_apellido: Optional[str],
-        fecha_nacimiento: str,
-        id_usuario_creacion: str,
+        fecha_nacimiento,
+        id_usuario_creacion: Optional[str] = None,
     ) -> Cliente:
+        """Crear un nuevo cliente."""
+
+        # ✅ Asegurar formato de fecha
+        if isinstance(fecha_nacimiento, str):
+            fecha_nacimiento = datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date()
+
         nuevo_cliente = Cliente(
             id_cliente=uuid4(),
             primer_nombre=primer_nombre,
             segundo_nombre=segundo_nombre,
             primer_apellido=primer_apellido,
             segundo_apellido=segundo_apellido,
-            fecha_nacimiento=datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date(),
+            fecha_nacimiento=fecha_nacimiento,
             id_usuario_creacion=id_usuario_creacion,
-            fecha_creacion=datetime.utcnow(),
-            fecha_actualizacion=datetime.utcnow(),
         )
         self.db.add(nuevo_cliente)
         self.db.commit()
@@ -41,21 +44,19 @@ class ClienteCRUD:
         return nuevo_cliente
 
     def obtener_cliente_por_id(self, id_cliente: str) -> Optional[Cliente]:
+        """Obtener cliente por su ID."""
         return self.db.query(Cliente).filter_by(id_cliente=id_cliente).first()
 
-    def listar_clientes(self) -> List[Cliente]:
-        return self.db.query(Cliente).all()
+    def listar_clientes(self, skip: int = 0, limit: int = 100) -> List[Cliente]:
+        """Listar clientes con paginación."""
+        return self.db.query(Cliente).offset(skip).limit(limit).all()
 
-    def actualizar_cliente(
-        self, id_cliente: str, nuevos_datos: dict
-    ) -> Optional[Cliente]:
+    def actualizar_cliente(self, id_cliente: str, **nuevos_datos) -> Optional[Cliente]:
+        """Actualizar un cliente existente."""
         cliente = self.obtener_cliente_por_id(id_cliente)
         if cliente:
             for key, value in nuevos_datos.items():
-                if hasattr(cliente, key) and key not in [
-                    "id_cliente",
-                    "id_usuario_creacion",
-                ]:
+                if hasattr(cliente, key) and key not in ["id_cliente", "id_usuario_creacion"]:
                     setattr(cliente, key, value)
             cliente.fecha_actualizacion = datetime.utcnow()
             self.db.commit()
@@ -63,6 +64,7 @@ class ClienteCRUD:
         return cliente
 
     def eliminar_cliente(self, id_cliente: str) -> bool:
+        """Eliminar un cliente."""
         cliente = self.obtener_cliente_por_id(id_cliente)
         if cliente:
             self.db.delete(cliente)
